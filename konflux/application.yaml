@@ -1,0 +1,54 @@
+---
+# Konflux Application - apply this first
+# kubectl apply -f konflux/application.yaml -n <your-tenant-namespace>
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Application
+metadata:
+  name: bluefield-ocp
+spec:
+  displayName: bluefield-ocp
+---
+# Component for OCP 4.21 + DOCA 3.3 branch
+# kubectl apply -f konflux/application.yaml -n <your-tenant-namespace>
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  name: bluefield-ocp-421-doca33
+  annotations:
+    # Use configure-pac-no-mr since we already have .tekton/ files in the repo
+    build.appstudio.openshift.io/request: configure-pac-no-mr
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-multi-platform-oci-ta","bundle":"latest"}'
+    # Change to 'gitlab' and update git-provider-url if using Option B (GitLab mirror)
+    git-provider: github
+    git-provider-url: https://github.com
+spec:
+  application: bluefield-ocp
+  componentName: bluefield-ocp-421-doca33
+  source:
+    git:
+      url: https://github.com/rh-ecosystem-edge/bluefield-ocp.git
+      revision: 4.21.x-DOCA-3.3
+      context: ./
+      dockerfileUrl: rhcos-bfb.Containerfile
+---
+# ImageRepository for the component
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository
+metadata:
+  name: bluefield-ocp-421-doca33
+  labels:
+    appstudio.redhat.com/application: bluefield-ocp
+    appstudio.redhat.com/component: bluefield-ocp-421-doca33
+  annotations:
+    image-controller.appstudio.redhat.com/update-component-image: 'true'
+spec:
+  image:
+    # Will be prefixed with namespace automatically
+    name: bluefield-ocp-421-doca33
+    visibility: public
+  notifications:
+    - config:
+        url: https://bombino.api.redhat.com/v1/sbom/quay/push
+      event: repo_push
+      method: webhook
+      title: SBOM-event-to-Bombino

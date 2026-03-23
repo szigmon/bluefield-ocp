@@ -11,4 +11,5 @@ tmp*
 old*
 .vscode
 scratch.txt
-.idea
+.ideakonflux-release-data/
+konflux-release-data/

@@ -1,0 +1,10 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "github>konflux-ci/mintmaker-presets:cve-automerge-critical"
+  ],
+  "dockerfile": {
+    "fileMatch": ["rhcos-bfb\\.Containerfile"]
+  },
+  "schedule": ["after 10pm and before 6am on every weekday", "every weekend"]
+}

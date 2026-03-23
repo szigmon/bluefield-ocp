@@ -1,0 +1,60 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  annotations:
+    build.appstudio.openshift.io/repo: https://github.com/rh-ecosystem-edge/bluefield-ocp?rev={{revision}}
+    build.appstudio.redhat.com/commit_sha: '{{revision}}'
+    build.appstudio.redhat.com/pull_request_number: '{{pull_request_number}}'
+    build.appstudio.redhat.com/target_branch: '{{target_branch}}'
+    pipelinesascode.tekton.dev/cancel-in-progress: "true"
+    pipelinesascode.tekton.dev/max-keep-runs: "3"
+    pipelinesascode.tekton.dev/on-cel-expression: |
+      event == "pull_request" && target_branch == "4.21.x-DOCA-3.3"
+      && (
+        "rhcos-bfb.Containerfile".pathChanged()
+        || "argfile.conf".pathChanged()
+        || "assets/***".pathChanged()
+        || "patches/***".pathChanged()
+        || "bfb/***".pathChanged()
+        || ".tekton/***".pathChanged()
+      )
+  creationTimestamp:
+  labels:
+    appstudio.openshift.io/application: bluefield-ocp
+    appstudio.openshift.io/component: bluefield-ocp-421-doca33
+    pipelines.appstudio.openshift.io/type: build
+  name: bluefield-ocp-421-doca33-on-pull-request
+  namespace: bluefield-ocp-tenant
+spec:
+  timeouts:
+    pipeline: "6h"
+    tasks: "3h"
+    finally: "3h"
+  params:
+  - name: git-url
+    value: '{{source_url}}'
+  - name: revision
+    value: '{{revision}}'
+  - name: output-image
+    value: quay.io/redhat-user-workloads/bluefield-ocp-tenant/bluefield-ocp/bluefield-ocp-421-doca33:on-pr-{{revision}}
+  - name: image-expires-after
+    value: 5d
+  - name: build-platforms
+    value:
+    - linux/arm64
+  - name: dockerfile
+    value: rhcos-bfb.Containerfile
+  - name: build-args-file
+    value: argfile.conf
+  pipelineRef:
+    name: bluefield-ocp-build
+  taskRunTemplate:
+    serviceAccountName: build-pipeline-bluefield-ocp-421-doca33
+  workspaces:
+  - name: git-auth
+    secret:
+      secretName: '{{ git_auth_secret }}'
+  - name: d-doca-baseurl-auth-creds
+    secret:
+      secretName: d-doca-baseurl-auth-creds
+status: {}
